@@ -16,6 +16,11 @@ class LuFundDetail:
         self.__grade__(soup)
 
     def __base_info__(self, soup):
+        self._net_value = soup.find('div', {'class': 'product-info'})\
+            .find('div', {'class': 'is-second clearfix'})\
+            .contents[1].contents[1].contents[1].string
+        self._net_value = float(self._net_value)
+
         info_ul = soup.find('ul', {'class': 'fund-info'})
         self._code = info_ul.contents[1].contents[1].string
         self._name = info_ul.contents[3].contents[1].string
