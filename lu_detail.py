@@ -12,12 +12,16 @@ class LuFundDetail:
         page = request.urlopen(url)
         soup = BeautifulSoup(page, 'html5lib')
 
+        self._product_id = url[-7:]
         self.__base_info__(soup)
         self.__grade__(soup)
+        self.__stage_performance__(soup)
+        self.__quarter_performance__(soup)
+        self.__year_performance__(soup)
 
     def __base_info__(self, soup):
-        self._net_value = soup.find('div', {'class': 'product-info'})\
-            .find('div', {'class': 'is-second clearfix'})\
+        self._net_value = soup.find('div', {'class': 'product-info'}) \
+            .find('div', {'class': 'is-second clearfix'}) \
             .contents[1].contents[1].contents[1].string
         self._net_value = float(self._net_value)
 
@@ -42,6 +46,49 @@ class LuFundDetail:
             if len(tr) > 3:
                 self._grade.append(LuFundGrade(tr))
 
+    def __stage_performance__(self, soup):
+        performance_trs = soup.find('table', {'class': 'product-table productRateTable'}).tbody.contents[1] \
+            .find_all('span')
+
+        if performance_trs[1].string.strip() != '--':
+            self._week_rate = performance_trs[1].string.strip()
+        if performance_trs[2].string.strip() != '--':
+            self._month_rate = performance_trs[2].string.strip()
+        if performance_trs[3].string.strip() != '--':
+            self._quarter_rate = performance_trs[3].string.strip()
+        if performance_trs[4].string.strip() != '--':
+            self._half_year_rate = performance_trs[4].string.strip()
+        if performance_trs[5].string.strip() != '--':
+            self._year_rate = performance_trs[5].string.strip()
+
+    def __quarter_performance__(self, soup):
+        quarter_performance_table = soup.find_all('table', {'class': 'productRateTable'})[1]
+        self._quarter_performance = self.__parse_performance_table__(quarter_performance_table)
+
+    def __year_performance__(self, soup):
+        year_performance_table = soup.find_all('table', {'class': 'productRateTable'})[2]
+        self._year_performance = self.__parse_performance_table__(year_performance_table)
+
+    def __parse_performance_table__(self, table):
+        performance = []
+        title_items = table.thead.tr.find_all('th')
+        title_items.pop(0)
+
+        stage_items = table.tbody.find_all('tr')[0].find_all('span')
+        stage_items.pop(0)
+
+        rank_items = table.tbody.find_all('tr')[4].find_all('td')
+        rank_items.pop(0)
+
+        for index in range(len(stage_items)):
+            if stage_items[index].string.strip() != '--':
+                performance.append(
+                    LuFundPerformance(title_items[index].string.strip(),
+                                      stage_items[index].string.strip(),
+                                      rank_items[index].string.strip()))
+
+        return performance
+
     def __repr__(self):
         return str(self.__dict__.copy())
 
@@ -62,6 +109,17 @@ class LuFundGrade:
         return str(self.__dict__.copy())
 
 
+class LuFundPerformance:
+
+    def __init__(self, title, performance, rank):
+        self._title = title
+        self._performance = performance
+        self._rank = rank
+
+    def __repr__(self):
+        return str(self.__dict__.copy())
+
+
 if __name__ == '__main__':
-    luDetail = LuFundDetail("https://e.lufunds.com/jijin/detail?productId=2708445")
+    luDetail = LuFundDetail("https://e.lufunds.com/jijin/detail?productId=2279195")
     luDetail.pprint()
